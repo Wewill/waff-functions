@@ -5,7 +5,7 @@ Plugin URI: http://www.wilhemarnoldy.fr
 Description: Bunch of functions from Template 1 to WAFF two theme & template : pre_get_posts, shortcodes, types, views, ordering ... 
 Author: Wilhem Arnoldy
 Author URI: http://www.wilhemarnoldy.fr
-Version: 2.5
+Version: 2.1
 */
 
 //namespace WaffTwo\Functions;
@@ -27,26 +27,74 @@ function waff_load_textdomain() {
 
 /* LOAD PARENT ADMIN SCRIPTS
 ================================================== */
-function waff_admin_scripts($hook) {
-	// $screen       = get_current_screen();
-	// $screen_id    = $screen ? $screen->id : '';
+function child_admin_scripts($hook) {
+	$screen       = get_current_screen();
+	$screen_id    = $screen ? $screen->id : '';
+
     wp_enqueue_script( 'custom-admin', plugins_url('/js/custom-admin.js',__FILE__),'','',true);
 }
-add_action( 'admin_enqueue_scripts', 'waff_admin_scripts', 30);
+add_action( 'admin_enqueue_scripts', 'child_admin_scripts', 30);
 
 
 // Theme custom chimpy form
-if ( defined('WAFF_NEWSLETTER_USE_CHIMPY') && true === WAFF_NEWSLETTER_USE_CHIMPY ) 
-	include( 'chimpy/custom-form-chimpy.php' );
+include( 'chimpy/custom-form-chimpy.php' );
 
 // ADD PARTNERS COLORIZE fcts
-if ( defined('WAFF_HAS_PARTNERS_COLORIZED_IMAGES') && true === WAFF_HAS_PARTNERS_COLORIZED_IMAGES ) 
+if ( defined('WAFF_HAS_PARTNERS_COLORIZED_IMAGES') ) 
 	include( 'colorizing/partners-functions.php' );
 
 // ADD SECTION COLORIZE fcts
-if ( defined('WAFF_HAS_SECTIONS_COLORIZED_IMAGES') && true === WAFF_HAS_SECTIONS_COLORIZED_IMAGES )
+if ( defined('WAFF_HAS_SECTIONS_COLORIZED_IMAGES') ) 
 	include( 'colorizing/sections-functions.php' );
 
+// /**
+//  * Notices
+//  */
+
+
+// // Add your query var if the coordinates are not retreive correctly.
+// $args['_show_notice'] = true;
+// $args['_generated_sizes'] = 'DEBUG';		        
+// add_filter( 'redirect_post_location', array( $args, 'waff_add_notice_query_var' ), 99 );
+
+
+// add_action( 'admin_notices', array( $this, 'waff_admin_notices' ) );
+// add_filter( 'removable_query_args', array($this, 'waff_remove_notice_query_var'));
+
+// function waff_add_notice_query_var( $location ) {
+// 	remove_filter( 'redirect_post_location', 'waff_add_notice_query_var', 99 );
+// 	return add_query_arg( array( 
+// 		'new_sizes' => true, 
+// 		'generated_sizes' => implode(', ', $this->_generated_sizes), 
+// 		'aborded_sizes' => implode(', ', $this->_aborded_sizes), 
+// 		'attachment_id' => sanitize_key($this->_attachment_id),
+// 		), $location );
+// }
+
+// function waff_remove_notice_query_var($args) {
+// 	array_push($args, 'new_sizes');
+// 	array_push($args, 'generated_sizes');
+// 	array_push($args, 'aborded_sizes');
+// 	array_push($args, 'attachment_id');
+// 	return $args;
+// }
+
+// function waff_admin_notices() {
+// 	if ( !isset( $_GET['show_notice'] ) ) {
+// 		return;
+// 	}
+
+// 	// Colorizing functions
+// 	if ( !empty($_GET['colorized_images']) ) {
+// 	? >
+// 	<div class="notice notice-info is-dismissible">
+// 		<p><b><?php esc_html_e( 'Created colorized image for :', 'waff' ); ? ></b> < ?php esc_html($_GET['colorized_images']); ? ></p>
+// 		<button type="button" class="notice-dismiss"><span class="screen-reader-text">< ?php esc_html_e( 'Dismiss this notice.', 'waff' ); ? ></span></button>
+// 	</div>
+// 	< ? php
+// 	}
+
+// }
 
 
 /**
@@ -91,60 +139,164 @@ function author_filter($query) {
 //add_action('pre_get_posts','author_filter');
 
 /**
- * Convert post_tag ( Tags ) tax from flat to hierarchical
- */ 
-function custom_hierarchical_tags_register() {
+ * Set current editions global vars
+ * NOW SET in wa-add-edition-tag.php
+ */
 
-	// Maintain the built-in rewrite functionality of WordPress tags
-	global $wp_rewrite;
-  
-	$rewrite =  array(
-	  'hierarchical'              => false, // Maintains tag permalink structure
-	  'slug'                      => get_option('tag_base') ? get_option('tag_base') : 'tag',
-	  'with_front'                => ! get_option('tag_base') || $wp_rewrite->using_index_permalinks(),
-	  'ep_mask'                   => EP_TAGS,
-	);
-  
-	// Redefine tag labels (or leave them the same)
-  
-	$labels = array(
-	  'name'                       => __( 'Tags' ),
-	  'singular_name'              => __( 'Tag' ),
-	  'menu_name'                  => __( 'Tags' ),
-	  'all_items'                  => __( 'All Tags'),
-	  'parent_item'                => __( 'Parent Tag'),
-	  'parent_item_colon'          => __( 'Parent Tag:'),
-	  'new_item_name'              => __( 'New Tag Name'),
-	  'add_new_item'               => __( 'Add New Tag'),
-	  'edit_item'                  => __( 'Edit Tag'),
-	  'update_item'                => __( 'Update Tag'),
-	  'view_item'                  => __( 'View Tag'),
-	  'separate_items_with_commas' => __( 'Separate tags with commas'),
-	  'add_or_remove_items'        => __( 'Add or remove tags'),
-	  'choose_from_most_used'      => __( 'Choose from the most used'),
-	  'popular_items'              => __( 'Popular Tags'),
-	  'search_items'               => __( 'Search Tags'),
-	  'not_found'                  => __( 'Not Found'),
-	);
-  
-	// Override structure of built-in WordPress tags
-  
-	register_taxonomy( 'post_tag', 'post', array(
-	  'hierarchical'              => true, // Was false, now set to true
-	  'query_var'                 => 'tag',
-	  //'labels'                    => get_taxonomy_labels('post_tag'),
-	  'labels'                    => $labels,
-	  'rewrite'                   => $rewrite,
-	  'public'                    => true,
-	  'show_ui'                   => true,
-	  'show_admin_column'         => true,
-	  '_builtin'                  => true,
-	  'show_in_rest'              => true,
-	  'rest_base'                 => 'tags',
-	) );
-  
-}
-add_action('init', 'custom_hierarchical_tags_register');
+// $current_edition = array();
+// $previous_editions = array();
+// $current_edition_id = 0;
+// $current_edition_slug = '';
+// $current_edition_films_are_online = false;
+// $current_edition_parent_term_id = 0;
+
+// //get_edition_vars
+// function get_edition_vars() {
+// 	global $current_edition, $previous_editions, $current_edition_id, $current_edition_slug, $current_edition_films_are_online, $current_edition_parent_term_id;
+
+// 	$args = array(
+// 		'taxonomy'=>'edition',
+// 		'hide_empty' => false, // A ajouter pour commencer la saison
+// 	);
+
+// 	$tmp_editions = get_terms($args);
+// 	$current_edition = false;
+// 	foreach($tmp_editions as $tmp_edition) {
+// 		$current = get_term_meta($tmp_edition->term_id, 'wpcf-e-current-edition', true);
+// 		if ($current) {
+// 			$current_edition = $tmp_edition;
+// 			$current_edition_id = $tmp_edition->term_id;
+// 			$current_edition_slug = $tmp_edition->slug;
+// 			//break;
+// 		} else {
+// 			$previous_editions[] = $tmp_edition->slug;
+// 		}
+// 	}
+// 	if (!$current_edition)
+// 		print "Oups¡ aucune edition en cours";
+// 	unset($tmp_editions);
+// 	$tmp_editions = null;
+	
+// 	// Get $current_edition_parent_term_id
+// 	$args = array(
+// 	    'taxonomy'   	=> 'section',
+// 	    'hide_empty' 	=> false,
+// 		'hierarchical' 	=> true,
+// 	    'orderby' 	 	=> 'term_order',
+// 	    'order' 		=> 'ASC',
+// 	    'parent' 		=> 0, 
+// 	    'meta_query' => array(
+// 	         array(
+// 	            'key'       => 'wpcf-select-edition',
+// 	            'value'     => $current_edition_id,
+// 	            'compare'   => '='
+// 	         )
+// 	    )
+// 	);
+// 	$get_edition_sections = get_terms($args);
+// 	//print_r($get_edition_sections);
+
+// 	foreach ($get_edition_sections as $section) {
+//     	if ( $section->parent == 0 ) {
+//  			$current_edition_parent_term_id = (int)$section->term_id;
+//  		}
+// 	}
+
+// 	// Get current_edition_films_are_online option
+// 	$tmp_current_edition_films_are_online = get_option('current_edition_films_are_online');
+// 	$current_edition_films_are_online = ( !empty($tmp_current_edition_films_are_online) && $tmp_current_edition_films_are_online == 1)?true:false; 
+
+// 	//wp_die('<pre>' . var_dump($current_edition) . var_dump($previous_editions) . var_dump($current_edition_id) . var_dump($current_edition_films_are_online) . var_dump($current_edition_parent_term_id) . '</pre>');		
+// }
+// add_action('init', 'get_edition_vars', 90); // wp_loaded
+
+// //getcurrentedition_func
+// function getcurrentedition_func($atts, $content = ''){
+// 	global $current_edition, $previous_editions, $current_edition_id, $current_edition_films_are_online;
+
+//   	// Extract atts
+//     extract( shortcode_atts( array(
+//         'display' => 'current',
+//         'content_before' => '',
+//         'content_after' => '',
+//         'content_during' => ''
+//     ), $atts ));
+
+
+// 	setlocale(LC_TIME, 'fr_FR.UTF8');
+
+// 	$today = getdate();
+// 	$edition_start_date_meta = get_term_meta($current_edition->term_id, 'wpcf-e-start-date', True);
+// 	$edition_end_date_meta = get_term_meta($current_edition->term_id, 'wpcf-e-end-date', True);
+// 	$edition_start_date = date('d', $edition_start_date_meta);//Y-m-d
+// 	$edition_end_date = date('d', $edition_end_date_meta);
+// 	$edition_year = date('Y', $edition_start_date_meta);
+// 	$edition_month = date('M', $edition_start_date_meta);
+// 	$edition_monthnumeric = date('m', $edition_start_date_meta);
+
+// 	switch (esc_attr($display)) {
+//   		case "current":
+//   			return $current_edition->slug;
+//   		break;
+//   		case "publicsafecurrent":
+//   			return ($current_edition_films_are_online === true)?$current_edition->slug:'-1';
+//   		break;
+// 		case "previous":
+//   			return $previous_editions;
+// 		  break;
+//   		case "publicsafeprevious":
+// 			return ($current_edition_films_are_online === true)?$previous_editions:'-1';
+// 		break;
+// 		case "startdate":
+//   			return $edition_start_date;
+//   		break;
+//   		case "enddate":
+//   			return $edition_end_date;
+//   		break;
+//   		case "dates":
+//   			return $edition_start_date . ' au ' . $edition_end_date;
+//   		break;
+//   		case "year":
+//   			return $edition_year;
+//   		break;
+//   		case "month":
+//   			return $edition_month;
+//   		break;
+//   		case "monthnumeric":
+//   			return $edition_monthnumeric;
+//   		break;
+//   		case "id":
+//   			return $current_edition_id;
+//   		break;
+//   		case "publicsafeid":
+//   			return ($current_edition_films_are_online === true)?$current_edition_id:-1;
+//   		break;
+// 		case "content":
+//   			if ( $today[0] < $edition_start_date_meta ) {
+//   				$contenttoshow = esc_attr($content_before);
+//   			} else if ( $today[0] > $edition_end_date_meta ) {
+//   				$contenttoshow = esc_attr($content_after);
+//   			} else {
+//   				$contenttoshow = esc_attr($content_during);
+//   			}
+//   			return do_shortcode($contenttoshow);
+//   		break;
+//   		case "section":
+//   			if ( $today[0] < $edition_start_date_meta ) {
+//   				$contenttoshow = esc_attr($content_before);
+//   			} else if ( $today[0] > $edition_end_date_meta ) {
+//   				$contenttoshow = esc_attr($content_after);
+//   			} else {
+//   				$contenttoshow = esc_attr($content_during);
+//   			}
+//   			return do_shortcode('[spb_section spb_section_id="'.$contenttoshow.'" width="1/1" el_position="first last"]');
+//   		break;
+//   		default:
+//   			return '';
+//   		break;
+//   	}
+// }
+// add_shortcode( 'getcurrenteditionsc', 'getcurrentedition_func' );
 
 /**
  * Filters 
@@ -285,69 +437,16 @@ function views_index() {
 add_shortcode('wpv-post-index', 'views_index');
 
 /**
- * Adds a shortcode to count post found by a view
- */
-//https://toolset.com/forums/topic/get-no-of-results-returned-by-view-in-template-after-all-filters-have-applied/
-function views_post_count( $atts ) {
-	$atts = shortcode_atts( [
-	//   'wpvprchildof' => 0
-	], $atts );
-	// $args = array( 'wpvprchildof'=> $atts['wpvprchildof'] );
-	$filtered_posts = get_view_query_results();
-	return count($filtered_posts);	
-}
-add_shortcode('wpv-post-count', 'views_post_count');
-
-/**
  * Adds a begin shortcodes to extract from a html span span span the first match 
  * > Used in views 
  */
 //if (function_exists('wpv_do_shortcode')) {
 	function begin_shortcode($atts, $content = '') {
 		$content = wpv_do_shortcode($content);
-		preg_match_all('/<span\s*class="[^>]+">(.*?)<\/span>/', $content, $match);
+		preg_match_all('/<span\s*class="[^>]+">(.*?)<\/span>/s', $content, $match);
 		return $match[0][0];
 	}
-	add_shortcode('begin', 'begin_shortcode'); // #43 Ancien shortcode 
-//}
-
-function func_get_begin_shortcode($atts, $content = '') {
-	$atts  = shortcode_atts( array(
-        'output' => 'raw',
-	), $atts );
-	$p_start_and_stop_time = get_post_meta( get_the_id(), 'wpcf-p-start-and-stop-time', false );
-	switch ($atts['output']) {
-	case 'html':
-		return ($p_start_and_stop_time[0]['begin'] != '')?'<span class="begin">' . esc_html($p_start_and_stop_time[0]['begin']) . '</span>':'';
-	break;
-	case 'sep':
-		return ($p_start_and_stop_time[0]['begin'] != '')?'<span class="begin">' . esc_html($p_start_and_stop_time[0]['begin']) . '</span> › ':'';
-	break;
-	default:
-		return esc_html($p_start_and_stop_time[0]['begin']);
-	break;
-	}
-}
-add_shortcode('get_begin', 'func_get_begin_shortcode'); // #43 Nouveau shortcode 
-
-function func_get_end_shortcode($atts, $content = '') {
-	$atts  = shortcode_atts( array(
-        'output' => 'raw',
-	), $atts );
-	$p_start_and_stop_time = get_post_meta( get_the_id(), 'wpcf-p-start-and-stop-time', false );
-	switch ($atts['output']) {
-	case 'html':
-		return ($p_start_and_stop_time[0]['end'] != '')?'<span class="end muted">' . esc_html($p_start_and_stop_time[0]['end']) . '</span>':'';
-	break;
-	case 'sep':
-		return ($p_start_and_stop_time[0]['end'] != '')?' › <span class="end muted">' . esc_html($p_start_and_stop_time[0]['end']) . '</span>':'';
-	break;
-	default:
-		return esc_html($p_start_and_stop_time[0]['end']);
-	break;
-	}
-}
-add_shortcode('get_end', 'func_get_end_shortcode'); // #43 Nouveau shortcode 
+	add_shortcode('begin', 'begin_shortcode');
 //}
 
 /**
@@ -579,7 +678,7 @@ function get_projection_days_func($atts, $content = ''){
 
 		$html_weekAll[] = sprintf('
 			<!-- Day %s  -->
-			<div class="card rounded-0 mx-1 ml-0 p-3 %s flex-fill day --actives --unactive --has-projections %s" data-date="%s">
+			<div class="card rounded-0 mx-1 ml-0 p-3 mb-3 flex-fill day --actives --unactive --has-projections %s" data-date="%s">
 				<div class="card-body p-0 m-0 d-flex flex-column %s">
 					<div class="part_one">
 						<div class="d-flex justify-content-center">
@@ -587,10 +686,10 @@ function get_projection_days_func($atts, $content = ''){
 								<span class="subline">%s</span><span class="display-2 light d-block mt-1">%s</span>
 							</div>
 						</div>
-						<p class="text-center mb-4 d-none d-sm-block"><i class="icon icon-down"></i></p>
+						<p class="text-center mb-4"><i class="icon icon-down"></i></p>
 					</div>
 					<div class="part_two">
-						<ul class="projections-list list-unstyled details"></ul><!-- Rempli en JS via "Fiche film" -->
+						<ul class="projections-list list-unstyled details"></ul>
 						%s
 					</div>
 					<div class="part_three">
@@ -599,7 +698,6 @@ function get_projection_days_func($atts, $content = ''){
 				</div>
 			</div>',
 			$count,
-			(( $show_rooms == true )?'mb-3':''),
 			(($day >= $edition_end_date_meta)?'unactive d-none d-xl-block':''),
 			(($edition_start_date_meta-82800) + (60 * 60 * (24 * $count-1))),
 			(( $show_rooms == true )?'justify-content-start':'justify-content-between'),
@@ -636,21 +734,7 @@ function get_projection_days_func($atts, $content = ''){
 add_shortcode( 'get_projection_days', 'get_projection_days_func' );
 
 
-/**
- * Dynamically populate select field from Types via shortcode and $_GET
- * > Used in types 
- */
-//
-function populate_exfunc_populate_expresspress($atts, $content = ''){
-  	// Extract atts
-	  extract( shortcode_atts( array(
-    ), $atts ));
-	// GET VAR
-	$express   = filter_input(INPUT_GET, 'express', FILTER_SANITIZE_STRING );
-    $output = (int)$express == 1 ? '1' : '0';
-	return $output;
-}
-add_shortcode( 'populate_express', 'func_populate_express' );
+
 
 
 
@@ -928,7 +1012,7 @@ function custom_metaquery_criteria_status( $query_args, $view_settings ) {
 */
 //add_filter( 'wpv_filter_query', 'custom_orderby_criteria_44397',20,3 );
 function custom_orderby_criteria_44397( $view_args, $view_settings, $view_id ) {
-	echo $view_id; // Géré dans Views avec promote puis ordre aléatoire 
+	//echo $view_id; // Géré dans Views avec promote puis ordre aléatoire 
 	if (isset($view_settings['view_id']) && $view_settings['view_id'] == 44397 ) {
 
         $view_args['meta_query'] = array(
@@ -1039,24 +1123,24 @@ return $query_args;
 }
 
 //add_filter( 'wpv_filter_query', 'custom_orderby_criteria_25296',10,3 );
-function custom_orderby_criteria_25296( $query_args ,$view_settings, $view_id ) {
-	// 25296 : projections-jour : Projections /jour FIFAM 
-	if (isset($view_settings['view_id']) && $view_settings['view_id'] == 25296 ) {
-		//print_r($query_args);
-		$query_args['orderby'] = 'wpcf-p-start-and-stop-time__begin';
-		$query_args['order'] = 'ASC';
-		return $query_args;
-	}
+// function custom_orderby_criteria_25296( $query_args ,$view_settings, $view_id ) {
+// 	// 25296 : projections-jour : Projections /jour FIFAM 
+// 	if (isset($view_settings['view_id']) && $view_settings['view_id'] == 25296 ) {
+// 		//print_r($query_args);
+// 		$query_args['orderby'] = 'wpcf-p-start-and-stop-time__begin';
+// 		$query_args['order'] = 'ASC';
+// 		return $query_args;
+// 	}
 
-	// 667 : projections-jour : Projections /jour DINARD 
-	if (isset($view_settings['view_id']) && $view_settings['view_id'] == 667 ) {
-		//print_r($query_args);
-		$query_args['orderby'] = 'wpcf-p-start-and-stop-time__begin';
-		$query_args['order'] = 'ASC';
-		return $query_args;
-	}
+// 	// 667 : projections-jour : Projections /jour DINARD 
+// 	if (isset($view_settings['view_id']) && $view_settings['view_id'] == 667 ) {
+// 		//print_r($query_args);
+// 		$query_args['orderby'] = 'wpcf-p-start-and-stop-time__begin';
+// 		$query_args['order'] = 'ASC';
+// 		return $query_args;
+// 	}
 
-//	// 659 : projections-film-jour-ajax : Projections / film / jour ( AJAX ) DINARD
+// 	// // 659 : projections-film-jour-ajax : Projections / film / jour ( AJAX ) DINARD
 // 	// if (isset($view_settings['view_id']) && $view_settings['view_id'] == 659 ) {
 // 	// 	//print_r($query_args);
 // 	// 	$query_args['orderby'] = 'wpcf-p-start-and-stop-time__begin';
@@ -1065,17 +1149,15 @@ function custom_orderby_criteria_25296( $query_args ,$view_settings, $view_id ) 
 // 	// }
 // }
 
-}
-
 //add_filter( 'wpv_filter_query', 'custom_orderby_criteria_47006',10,3 );
-function custom_orderby_criteria_47006( $query_args ,$view_settings, $view_id ) {
-	if (isset($view_settings['view_id']) && $view_settings['view_id'] == 47006 ) {
-		//print_r($query_args);
-	   $query_args['orderby'] = 'wpcf-p-start-and-stop-time__begin';
-	   $query_args['order'] = 'ASC';
-	   return $query_args;
-	}
-   }
+// function custom_orderby_criteria_47006( $query_args ,$view_settings, $view_id ) {
+// 	if (isset($view_settings['view_id']) && $view_settings['view_id'] == 47006 ) {
+// 		//print_r($query_args);
+// 	   $query_args['orderby'] = 'wpcf-p-start-and-stop-time__begin';
+// 	   $query_args['order'] = 'ASC';
+// 	   return $query_args;
+// 	}
+// }
 
 /* 
 	Ajouter des query vars 
@@ -1243,12 +1325,6 @@ function date_now_shortcode($atts) {
 	return time();
 }
 add_shortcode('datenow', 'date_now_shortcode');
-
-// Add Shortcode [capitalize]
-function func_capitalize($atts, $content='') {
-	return ucwords(strtolower(do_shortcode($content)));
-}
-add_shortcode('capitalize', 'func_capitalize');
 
 // Add Shortcode [do_markdown]content
 function func_do_markdown($atts, $content='') {
@@ -1489,13 +1565,9 @@ add_shortcode( 'get_term_meta', 'func_get_term_meta_data' );
 */
 
 add_shortcode('wpv-single-post-taxonomy', 'single_post_taxonomies_shortcode_render');
+
 function single_post_taxonomies_shortcode_render($atts) {
-
-	if ( class_exists( 'WPV_wpcf_switch_post_from_attr_id', false ) ) 
-		$post_id_atts = new WPV_wpcf_switch_post_from_attr_id($atts);
-	else 
-		$post_id_atts = null;
-
+    $post_id_atts = new WPV_wpcf_switch_post_from_attr_id($atts);
  
     extract(
         shortcode_atts( array('format' => '',
@@ -1613,12 +1685,8 @@ function single_post_taxonomies_shortcode_render($atts) {
 
 add_shortcode('wpv-post-taxonomy-in-edition', 'current_edition_post_taxonomies_shortcode_render');
 function current_edition_post_taxonomies_shortcode_render($atts) {
-
-	if ( class_exists( 'WPV_wpcf_switch_post_from_attr_id', false ) ) 
-		$post_id_atts = new WPV_wpcf_switch_post_from_attr_id($atts);
-	else 
-		$post_id_atts = null;
-
+    $post_id_atts = new WPV_wpcf_switch_post_from_attr_id($atts);
+ 
     extract(
         shortcode_atts( array('format' => '',
                               'type' => 'category',
@@ -1641,7 +1709,7 @@ function current_edition_post_taxonomies_shortcode_render($atts) {
 		$types = array_map( 'trim', $types );
 		$types = array_map( 'sanitize_text_field', $types );
 	}
-
+     
     global $post;
     $separator = !empty($atts['separator']) ? @strval($atts['separator']) : ', ';
     $out_terms = array();
@@ -1733,68 +1801,6 @@ function current_edition_post_taxonomies_shortcode_render($atts) {
     return $out;
 }
 
-/*
-	Get post taxonomies for view but return only if in current edition 
-	Same as wpv-taxonomy-post-count
-*/
-
-add_shortcode('wpv-taxonomy-post-count-in-edition', 'current_edition_taxonomy_post_count_render');
-function current_edition_taxonomy_post_count_render($atts, $content = null) {
-    global $WP_Views, $current_edition_id;
-	//https://toolset.com/forums/topic/how-do-i-retrieve-term_id-from-currently-queried-terms-in-taxonomy-view/
-
-	extract(
-        shortcode_atts( array(
-			'term_id' => "",
-			),
-			$atts )
-    );
-
-	if ( $atts['term_id'] != ''){
-		$t_id = $atts['term_id'];
-	} else {
-		$t = $WP_Views->get_current_taxonomy_term(); 
-		$t_id = $t->term_id;
-	}
-	// print_r("termid:::", $atts['term_id']);
-	// print_r("t:::", $t_id);	
-
-	$term = get_term( $t_id );
-	// print_r("term::", $term);	
-
-	if ( null === $term ) {
-		return '';
-	}
-	$taxonomy = $term->taxonomy;
-
-	$args = array(
-		'post_type' => 'jury',
-		'posts_per_page' => -1,
-		'tax_query' => array(
-			'relation' => 'AND',
-			array (
-				'taxonomy' 	=> 'edition',
-				'field' 	=> 'term_id',
-				'terms' 	=> array($current_edition_id),
-			),
-			array (
-				'taxonomy' 	=> $taxonomy,
-				'field' 	=> 'term_id',
-				'terms' 	=> array($t_id),
-			)
-		),
-		//return an array of post IDs
-		'fields' => 'ids',
-	);      
-    $jurys = get_posts($args);
-	// print_r($jurys);
-
-	$out = count($jurys);
-
-	apply_filters( 'wpv_shortcode_debug', 'wpv-taxonomy-post-count-in-edition', json_encode( $atts ), '', 'Data received from cache.', $out );
-
-	return $out;
-}
 
 /*
 	Grant media upload access and rights for visitors for a CRED form
@@ -1934,7 +1940,7 @@ function func_waff_gallery($atts, $content='') {
 	if ( $atts['display'] == 'masonry' ) :
 	// Before
 	$footer = explode(',', func_do_markdown(array(), $atts['blockquote-footer']) );
-	$output = '<div class="row medias contrast--light align-items-center row-cols-4 pt-4 pb-0 pt-sm-8 pb-sm-8 g-0 f-w">
+	$output = '<div class="row medias contrast--light align-items-center row-cols-4 pt-8 pb-8 g-0 f-w">
 				<div class="col-12 col-lg-3 excerpt p-gutter-l pt-4 pb-4 pr-4 --pl-4">';
 
 	if ( $content != '' ) {
@@ -2115,8 +2121,6 @@ add_shortcode( 'linebreaks_to_list', 'func_linebreaks_to_list' );
 
 
 function func_get_formats($atts, $content='') {
-	global $current_edition_id;
-
     // provide defaults
     $atts = shortcode_atts(
         array(
@@ -2129,209 +2133,141 @@ function func_get_formats($atts, $content='') {
 	$output = '<!-- func_get_formats : outputs -->';
 	//$content = do_shortcode($content);
 
-	// Get post id & type
 	$postid = get_the_ID();
 	$posttype = get_post_type();
+	$fields = get_post_meta( $postid, 'wpcf-'.$atts['field'], false); // true = no array 
 
-	/**
-	 * Get data for output style : language, icon, format
-	 */
-	if ( ($atts['output'] == 'language' || $atts['output'] == 'icon' || $atts['output'] == 'format') ) {
-		//echo '@@@formats';
+	// Check if has_projections
+	$relationship = 'film';
+	$forposttype = 'projection';
+	$identification = 'film_projection'; // > Toolset 3.0
+	$count_connections = 0;
+	// $has_relationship 	= toolset_get_relationship( array( $relationship, $forposttype ) ); // FIFAM Old < 2.3 
+	if ( $identification != '' ) 
+		$has_relationship = toolset_get_relationship( $identification ); // DINARD
+	else
+		$has_relationship = toolset_get_relationship( array( $relationship, $forposttype ) ); //FIFAM / KO DINARD
 
-		$has_kdm 				= false;
-		$has_withoutdialogue 	= false;
-		$has_3D					= false;
-		$has_vostfr 			= false;
+	// echo('##<pre>');
+	// print_r($has_relationship);
+	// echo('</pre>');
 
-		$formats				= array();
-		$format_informations	= array();
-		$vos					= array();
-		$vost					= array();
-		$sound_format			= array();
+	$has_projections = false;
 
-		/*
-			[format] => DCP
-			[kdm] => 1
-			[format_information] => 2K
-			[vo] => en
-			[vostfr] => 1
-			[vost] => fr
-			[without_dialogue] => 1
-			[sound_format] => 5.1
-		*/
-		$fields = get_post_meta( $postid, 'wpcf-'.$atts['field'], false); // true = no array 
-		foreach($fields as $index => $field) {
-			// print_r($field);
-			if ( $field['format'] != '' && $field['format'] != 'N/A' )
-				$formats[] = $field['format'];
-			if ( $field['format_information'] != '' && $field['format_information'] != 'N/A' )
-				$format_informations[] = $field['format_information'];
-			if ( $field['vo'] != '' && $field['vo'] != 'N/A' )
-				$vos[] = $field['vo'];
-			if ( $field['vost'] != '' && $field['vost'] != 'N/A' )
-				$vost[] = $field['vost'];
-			if ( $field['sound_format'] != '' && $field['sound_format'] != 'N/A' )
-				$sound_format[] = $field['sound_format'];
-			if ( $field['kdm'] == 1 ) 
-				$has_kdm = true;
-			if ( $field['without_dialogue'] == 1 ) 
-				$has_withoutdialogue = true;
-			if ( $field['format_information'] == "3D" ) 
-				$has_3D = true;
-			if ( $field['vostfr'] == 1 ) 
-				$has_vostfr = true;
-		}
+	if ( $has_relationship ) {
+		$parent = $has_relationship['roles']['parent']['types'][0];
+		$child = $has_relationship['roles']['child']['types'][0];
+		$origin = ( $parent == $posttype ) ? 'parent' : 'child';
+		$returning = ( $parent == $posttype ) ? 'child' : 'parent';
+		
+		//Get connected posts // FIFAM Old < 2.3 
+		// $connections = toolset_get_related_posts( $postid, array($relationship,$forposttype), $origin, 9999, 0, array(), 'post_id', 'other', null, 'ASC', true, $count_connections );
+		// if ( !empty($connections) )  $has_projections = true;
+
+        // Get connected posts // DINARD New > 2.3 
+		$connections = toolset_get_related_posts(
+			$postid, //query_by_elements : single ID or array( 'parent' => $films_in_section_results ), //query_by_elements
+			$identification, //relationship
+			array(
+				'query_by_role' => $origin, // Origin post role / query_by_role: Name of the element role to query by. This argument is required if a single post is provided in $query_by_elements, and in other cases, it must not be present at all. Accepted values: 'parent' | 'child' | 'intermediary'.
+				'role_to_return' => $returning, // Role of posts to return : 'parent' | 'child' | 'intermediary' | 'all'
+				'return' => 'post_id', // Return array of IDs (post_id) or post objects (post_object)
+				'limit' => 999, // Max number of results
+				'offset' => 0, // Starting from
+				// 'orderby' => 'title', 
+				// 'order' => 'ASC',
+				'need_found_rows' => false, // also return count of results
+				'args' => null // Array for adding meta queries etc.
+			)
+		);
+		// echo('##<pre>');
+		// print_r($connections);
+		// echo('</pre>');
+
+		// Finally, we just have to check if we have connections 
+		if ( !empty($connections) && count($connections) > 0 )  $has_projections = true;
 	}
 
-	/**
-	 * Get data for output style : tag
-	 */
-	if ( ($atts['output'] == 'tag' || $atts['output'] == 'inline-tag') ) {
-		//echo '@@@tag';
+	/*
+		[format] => DCP
+		[kdm] => 1
+		[format_information] => 2K
+		[vo] => en
+		[vostfr] => 1
+		[vost] => fr
+		[without_dialogue] => 1
+		[sound_format] => 5.1
+	*/
 
-		// Check if has_projections
-		$has_projections = false;
-		$relationship		= 'film';
-		$forposttype 		= 'projection';
-		$identification 	= 'film_projection'; // > Toolset 3.0
-		$count_connections 	= 0;
-		if ( $identification != '' ) 
-			$has_relationship = toolset_get_relationship( $identification ); // DINARD
-		else
-			$has_relationship = toolset_get_relationship( array( $relationship, $forposttype ) ); //FIFAM / KO DINARD // FIFAM Old < 2.3 
-		// echo('##has_relationship<pre>'); print_r($has_relationship);  echo('</pre>');
+	$has_kdm 				= false;
+	$has_withoutdialogue 	= false;
+	$has_3D					= false;
+	$has_vostfr 			= false;
+	$has_youngpublic		= false;
+	$has_highlight			= false;
+	$has_guest				= false;
 
-		if ( $has_relationship ) {
-			$parent = $has_relationship['roles']['parent']['types'][0];
-			$child = $has_relationship['roles']['child']['types'][0];
+	$formats				= array();
+	$format_informations	= array();
+	$vos					= array();
+	$vost					= array();
+	$sound_format			= array();
+	$guests					= array();
 
-			$origin = ( $parent == $posttype ) ? 'parent' : 'child';
-			$returning = ( $parent == $posttype ) ? 'child' : 'parent';
+	foreach($fields as $index => $field) {
+		// print_r($field);
+		if ( $field['format'] != '' && $field['format'] != 'N/A' )
+			$formats[] = $field['format'];
+		if ( $field['format_information'] != '' && $field['format_information'] != 'N/A' )
+			$format_informations[] = $field['format_information'];
+		if ( $field['vo'] != '' && $field['vo'] != 'N/A' )
+			$vos[] = $field['vo'];
+		if ( $field['vost'] != '' && $field['vost'] != 'N/A' )
+			$vost[] = $field['vost'];
+		if ( $field['sound_format'] != '' && $field['sound_format'] != 'N/A' )
+			$sound_format[] = $field['sound_format'];
+		if ( $field['kdm'] == 1 ) 
+			$has_kdm = true;
+		if ( $field['without_dialogue'] == 1 ) 
+			$has_withoutdialogue = true;
+		if ( $field['format_information'] == "3D" ) 
+			$has_3D = true;
+		if ( $field['vostfr'] == 1 ) 
+			$has_vostfr = true;
+	}
 
-			if (get_post_type($postid) == 'film') {
-				// echo('####From a projection, film list');
-				$origin = 'parent';
-				$returning = 'child';	
-			}
-			
-			//Get connected posts // FIFAM Old < 2.3 
-			// $connections = toolset_get_related_posts( $postid, array($relationship,$forposttype), $origin, 9999, 0, array(), 'post_id', 'other', null, 'ASC', true, $count_connections );
-			// if ( !empty($connections) )  $has_projections = true;
-			// echo('##posttype in loop<pre>'); print_r($posttype); echo('</pre>');
-			// echo('##ID in loop<pre>'); print_r($postid); echo('</pre>');
-			// echo('##ID queried <pre>'); print_r(get_queried_object_id()); echo('</pre>');
-			// echo('##posttype queried <pre>'); print_r(get_post_type(get_queried_object_id())); echo('</pre>');
-
-			// Get connected film // Toolset 3.0 DINARD New > 2.3 
-			$connections = toolset_get_related_posts(
-				$postid, //query_by_elements : single ID or array( 'parent' => $films_in_section_results ), //query_by_elements
-				$identification, //relationship
-				array(
-					'query_by_role' => $origin, // Origin post role / query_by_role: Name of the element role to query by. This argument is required if a single post is provided in $query_by_elements, and in other cases, it must not be present at all. Accepted values: 'parent' | 'child' | 'intermediary'.
-					'role_to_return' => $returning, // Role of posts to return : 'parent' | 'child' | 'intermediary' | 'all'
-					'return' => 'post_id', // Return array of IDs (post_id) or post objects (post_object)
-					'limit' => 999, // Max number of results
-					'offset' => 0, // Starting from
-					// 'orderby' => 'title', 
-					// 'order' => 'ASC',
-					'need_found_rows' => false, // also return count of results
-					'args' => null // Array for adding meta queries etc.
-				)
-			);
-			// echo('##connections film<pre>'); print_r($connections); echo('</pre>');
-
-			// Get connected films 
-			$connections_films = toolset_get_related_posts(
-				$postid, //query_by_elements : single ID or array( 'parent' => $films_in_section_results ), //query_by_elements
-				'films-projection', //relationship
-				array(
-					'query_by_role' => $origin, // Origin post role / query_by_role: Name of the element role to query by. This argument is required if a single post is provided in $query_by_elements, and in other cases, it must not be present at all. Accepted values: 'parent' | 'child' | 'intermediary'.
-					'role_to_return' => $returning, // Role of posts to return : 'parent' | 'child' | 'intermediary' | 'all'
-					'return' => 'post_id', // Return array of IDs (post_id) or post objects (post_object)
-					'limit' => 999, // Max number of results
-					'offset' => 0, // Starting from
-					// 'orderby' => 'title', 
-					// 'order' => 'ASC',
-					'need_found_rows' => false, // also return count of results
-					'args' => null // Array for adding meta queries etc.
-				)
-			);
-			// echo('##connections films<pre>'); print_r($connections_films); echo('</pre>');
-			if ( empty($connections) && !empty($connections_films) ) $connections = $connections_films;
-
-			if ( get_post_type(get_queried_object_id()) == 'projection')
-				$connections = array(get_queried_object_id()); // If we came from a projection single page > then request all the meta from projection and not from relations. 
-
-
-			// Finally, we just have to check if we have connections 
-			if ( !empty($connections) && count($connections) > 0 ) {
-				$has_projections 		= true;
-				$has_youngpublic		= false;
-				$has_highlight			= false;
-				$has_guest				= false;
-				$has_debate				= false; //ADDED #43
-				$has_tag				= false;
-				$has_program			= false; //ADDED #43
-				$guests					= array();
-				$guest_names			= array();
-
-				foreach($connections as $index => $connection) {
-					// echo('##connection film<pre>'); print_r($connection); echo('</pre>' . get_post_meta( $connection, 'wpcf-p-is-guest', true));
-					// Don't show metas if not the correct edition ( [0] = a projection cannot have multiple editions )
-					$edition = get_the_terms($connection, 'edition');
-					if ( $edition[0]->term_id != $current_edition_id) continue;
-					// Get metas
-					if ( get_post_meta( $connection, 'wpcf-p-young-public', true) == 1 ) // true = no array
-						$has_youngpublic = true;
-					if ( get_post_meta( $connection, 'wpcf-p-highlights', true) == 1 ) // true = no array
-						$has_highlight = true;
-					if ( get_post_meta( $connection, 'wpcf-p-is-guest', true) == 1 ) // true = no array
-						$has_guest = true;
-					if ( get_post_meta( $connection, 'wpcf-p-is-debate', true) == 1 ) // true = no array //ADDED #43
-						$has_debate = true;
-					if ( get_post_meta( $connection, 'wpcf-p-tag', true) != '' ) // true = no array
-						$has_tag = true;
-					if ( $has_guest == true ) {
-						//$contacts 	= types_render_field('p-e-guest-contact', array('item' => $connection, 'output' => 'raw')); // List
-						//$contact 		= get_post_meta( $connection, 'wpcf-p-e-guest-contact', true); // Unique 
-						$contacts 		= get_post_meta( $connection, 'wpcf-p-e-guest-contact', false); // Array 
-						$guest_names[] 	= get_post_meta( $connection, 'wpcf-p-guest-name', true); // Unique 
-						foreach( $contacts as $contact ) {
-							$lastname 	= get_post_meta( $contact, 'wpcf-c-name', true);
-							$firstname 	= get_post_meta( $contact, 'wpcf-c-firstname', true);
-							$surname 	= get_post_meta( $contact, 'wpcf-c-surname', true);
-
-							$lastname 	= (strlen($lastname)>20)?substr($lastname,0,17).'...':$lastname;
-							$firstname 	= (strlen($firstname)>20)?substr($firstname,0,17).'...':$firstname;
-							$surname 	= (strlen($surname)>30)?substr($surname,0,27).'...':$surname;
-
-							$guests[] 	= (($surname != '')?$surname:$firstname.' '.$lastname); 
-						}
-						// DEBUG
-						// print_r($guests);
-						// print_r($guest_names);
-					}
-					if ( $has_tag == true )
-						$tag 		= types_render_field( 'p-tag', array('id' => $connection ) );
-					if ( !empty($connections_films) && count($connections_films) > 0 ) // true = no array
-						$has_program = true;
-				}
+	if ( $has_projections == true && $atts['output'] == 'tag' ) {
+		foreach($connections as $index => $connection) {
+			// print_r($connection);
+			// Don't show metas if not the correct edition ( [0] = a projection cannot have multiple editions )
+			$edition = get_the_terms($connection, 'edition');
+			if ( $edition[0]->term_id != $current_edition_id) continue;
+			// Get metas
+			if ( get_post_meta( $connection, 'wpcf-p-young-public', true) == 1 ) // true = no array
+				$has_youngpublic = true;
+			if ( get_post_meta( $connection, 'wpcf-p-highlights', true) == 1 ) // true = no array
+				$has_highlight = true;
+			if ( get_post_meta( $connection, 'wpcf-p-is-guest', true) == 1 ) // true = no array
+				$has_guest = true;
+			if ( $has_guest == true ) {
+				//$guests[] = types_render_field('p-e-guest-contact', array('item' => 'projection'));
+				$contact 	= get_post_meta( $connection, 'wpcf-p-e-guest-contact', true);
+				$lastname 	= get_post_meta( $contact, 'wpcf-c-name', true);
+				$firstname 	= get_post_meta( $contact, 'wpcf-c-firstname', true);
+				$surname 	= get_post_meta( $contact, 'wpcf-c-surname', true);
+				$guests[] 	= (($surname != '')?$surname:$firstname.' '.$lastname); 
 			}
 		}
 	}
 
-	/**
-	 * Output
-	 */
 	if ( $atts['output'] == 'language' ) {
-		if ( !empty($vos) ) 					$output .= '<span class="language-item link-disabled">VO('.implode(',', $vos).')</span>';
-		if ($has_vostfr == true) 				$output .= '<span class="language-item link-disabled">VOSTFR</span>';
-		if ( !empty($vost) ) 					$output .= '<span class="language-item link-disabled">VOST('.implode(',', $vost).')</span>';
+		if ( !empty($vos) ) 				$output .= '<span class="language-item link-disabled">VO('.implode(',', $vos).')</span>';
+		if ($has_vostfr == true) 			$output .= '<span class="language-item link-disabled">VOSTFR</span>';
+		if ( !empty($vost) ) 				$output .= '<span class="language-item link-disabled">VOST('.implode(',', $vost).')</span>';
 
 	} else if ( $atts['output'] == 'icon' ) {
-		if ($has_withoutdialogue == true) 		$output .= '<span class="icon-item link-disabled"><i class="icon icon-without mr-1"></i></span>';
-		if ($has_3D == true) 					$output .= '<span class="icon-item link-disabled"><i class="icon icon-3d mr-1"></i></span>';
+		if ($has_withoutdialogue == true) 	$output .= '<span class="icon-item link-disabled"><i class="icon icon-without mr-1"></i></span>';
+		if ($has_3D == true) 				$output .= '<span class="icon-item link-disabled"><i class="icon icon-3d mr-1"></i></span>';
 	} else if ( $atts['output'] == 'format' ) {
 		if ( !empty($formats) ) 				$output .= '<span class="format-item link-disabled">'.implode(', ', $formats).'</span>';
 		if ( !empty($format_informations) ) 	$output .= '<span class="format-item link-disabled">'.implode(', ', $format_informations).'</span>';
@@ -2339,7 +2275,6 @@ function func_get_formats($atts, $content='') {
 		//$output .= 'count_connections : '.$count_connections;
 		//$output .= 'has_kdm : '.$has_kdm;
 	} else if ( $atts['output'] == 'tag' ) {
-		// if ($has_program == true) 
  		if ($has_highlight == true) 
 			$output .= sprintf('<span class="badge text-wrap color-black text-dark text-dark text-left text-uppercase normal" style="max-width: 5rem;">
 				<i class="icon icon-sun float-left float-start mr-1 f-14"></i>
@@ -2351,298 +2286,19 @@ function func_get_formats($atts, $content='') {
 				<small>Parents-<strong class="bold">enfants</strong></small>
 			</span>');
 		if ($has_guest == true) 
-			$output .= sprintf('<span class="badge text-wrap color-black text-dark text-left text-uppercase normal" style="max-width: 7rem;" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="<em>En présence de</em> ・ %s">
+			$output .= sprintf('<span class="badge text-wrap color-black text-dark text-left text-uppercase normal" style="max-width: 7rem;">
 				<i class="icon icon-guest float-left float-start mr-1 f-14"></i>
 				<small>Avec <span class="screen-reader-text">invité</span><strong class="bold">%s</strong></small>
 			</span>',
-			implode(',', $guests),
-			(!empty($guest_names))?implode(', ', $guest_names):implode(', ', $guests),
-			);
-		if ($has_debate == true) 
-			$output .= sprintf('<span class="badge text-wrap color-black text-dark text-dark text-left text-uppercase normal" style="max-width: 5rem;">
-				<i class="icon icon-mic float-left float-start mr-1 f-14"></i>
-				<small>Avec <strong class="bold">débat</strong></small>
-			</span>');
-		// No projection tag needed here
-	} else if ( $atts['output'] == 'inline-tag' ) {
-		if ($has_program == true) 
-			$output .= sprintf('<i class="icon icon-play"></i> Dans un programme <span class="me-2"></span>');
-		if ($has_highlight == true) 
-			$output .= sprintf('<i class="icon icon-sun"></i> Temps-fort <span class="me-2"></span>');
-		if ($has_youngpublic == true) 
-			$output .= sprintf('<i class="icon icon-young"></i> Parents-enfants <span class="me-2"></span>');
-		if ($has_guest == true) 
-			$output .= sprintf('<span data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="<em>En présence de</em> ・ %s"><i class="icon icon-guest"></i> En présence de <span class="subline">%s</span></span> <span class="me-2"></span>',
-			implode(',', $guests),
-			(!empty($guest_names))?implode(', ', $guest_names):implode(', ', $guests),
-			);
-		if ($has_debate == true) 
-			$output .= sprintf('<i class="icon icon-mic"></i> Avec débat <span class="me-2"></span>');
-		if ($has_tag == true) 
-			$output .= sprintf('<span class="text-danger"><i class="icon icon-warning text-danger"></i> %s</span> <span class="me-2"></span>',
-			print_r($tag, true)
+			implode(',', $guests)
 			);
 	} else {
 		$output = 'Error: no rendering output chosen';
 	}
 
-	// print_r($output);
 	return $output;
 }
 add_shortcode( 'get_formats', 'func_get_formats' );
-
-
-function func_get_programs($atts, $content='', $dontknowwhat, $p_id = null, $f_id = null) {
-	// Output 
-	$atts = shortcode_atts(
-        array(
-			'output' 		=> 'array',
-			'p-id' 			=> null,
-			'f-id' 			=> null,
-        ),
-        $atts
-	);
-	$output = '<!-- func_get_programs : outputs -->';
-	$films = [];
-	$orders = [];
-
-	// P or F id 
-	$p_id = ($atts['p-id'] != null)?intval(esc_attr($atts['p-id'])):intval($p_id);
-	$f_id = ($atts['f-id'] != null)?intval(esc_attr($atts['f-id'])):intval($f_id);
-
-	// echo('##get_the_ID<b>'); echo get_the_ID(); echo('</b>');
-	// echo('##p-id<b>'); echo intval(esc_attr($atts['p-id'])); echo('</b>');
-	// echo('##f-id<b>'); echo intval(esc_attr($atts['f-id'])); echo('</b>');
-	// echo('##p_id<b>'); echo $p_id; echo('</b>');
-	// echo('##f_id<b>'); echo $f_id; echo('</b>');
-
-	// Get post id & type
-	$postid = ( $p_id !== 0 || $f_id !== 0 )?(($p_id !== 0 )?$p_id:$f_id):get_the_ID();
-
-	// echo('##postid<b>'); echo $postid; echo('</b>');
-	// error_log($postid);
-
-	$posttype = ($p_id)?'film':get_post_type();
-	$posttype = ($f_id)?'projection':get_post_type();
-
-	// echo('##posttype<b>'); echo $posttype; echo('</b>');
-	// error_log($posttype);
-
-	// Check if has_programs
-	$relationship		= 'film';
-	$forposttype 		= 'projection';
-	$identification 	= 'films-projection'; // > Toolset 3.0
-	if ( $identification != '' ) 
-		$has_relationship = toolset_get_relationship( $identification ); // DINARD / FIFAM > 3.0
-	else
-		$has_relationship = toolset_get_relationship( array( $relationship, $forposttype ) ); //FIFAM / KO DINARD // FIFAM Old < 2.3 
-	//echo('##has_relationship<pre>'); print_r($has_relationship);  echo('</pre>');
-	//error_log($has_relationship);
-
-	if ( $has_relationship ) {
-		$parent = $has_relationship['roles']['parent']['types'][0];
-		$child = $has_relationship['roles']['child']['types'][0];
-		
-		$origin = ( $parent == $posttype ) ? 'child' : 'parent';
-		$returning = ( $parent == $posttype ) ? 'parent' : 'child';
-		
-		if ( $p_id !== 0 ) {
-			$origin = ( $parent == $posttype ) ? 'child' : 'parent';
-			$returning = ( $parent == $posttype ) ? 'parent' : 'child';
-			// $origin = ( $parent == $posttype ) ? 'parent' : 'child';
-			// $returning = ( $parent == $posttype ) ? 'child' : 'parent';
-		}
-
-		if ( $f_id !== 0 || $posttype == 'film' ) {
-			// $origin = ( $parent == $posttype ) ? 'child' : 'parent';
-			// $returning = ( $parent == $posttype ) ? 'parent' : 'child';
-			$origin = ( $parent == $posttype ) ? 'parent' : 'child';
-			$returning = ( $parent == $posttype ) ? 'child' : 'parent';
-		}
-
-
-		// if ( $posttype == 'film' ) {
-		// 	$origin = "parent";
-		// 	$returning = "child";
-		// }
-
-		// echo('##postid<pre>'); print_r($postid); echo('</pre>');
-		// echo('##posttype<pre>'); print_r($posttype); echo('</pre>');
-		// echo('##parent<pre>'); print_r($parent); echo('</pre>');
-		// echo('##origin<pre>'); print_r($origin); echo('</pre>');
-		// echo('##returning<pre>'); print_r($returning); echo('</pre>');
-
-		// $origin = "child";
-		// $returning = "child";
-		
-		//Get connected posts // FIFAM Old < 2.3 
-		// $connections = toolset_get_related_posts( $postid, array($relationship,$forposttype), $origin, 9999, 0, array(), 'post_id', 'other', null, 'ASC', true, $count_connections );
-		// if ( !empty($connections) )  $has_projections = true;
-
-		// Get connected posts // DINARD New > 2.3 
-		$connections = toolset_get_related_posts(
-			$postid, //query_by_elements : single ID or array( 'parent' => $films_in_section_results ), //query_by_elements
-			$identification, //relationship
-			array(
-				'query_by_role' => $returning, // Origin post role / query_by_role: Name of the element role to query by. This argument is required if a single post is provided in $query_by_elements, and in other cases, it must not be present at all. Accepted values: 'parent' | 'child' | 'intermediary'.
-				'role_to_return' => 'all', // Role of posts to return : 'parent' | 'child' | 'intermediary' | 'all'
-				'return' => 'post_object', // Return array of IDs (post_id) or post objects (post_object)
-				'limit' => 999, // Max number of results
-				'offset' => 0, // Starting from
-				// 'orderby' => 'title', 
-				// 'order' => 'ASC',
-				'need_found_rows' => false, // also return count of results
-				'args' => null // Array for adding meta queries etc.
-			)
-		);
-		//retrieve parent post ID from a one to many relationsship when knowing the child post-ID
-		//$connections = toolset_get_related_posts( $postid, $identification, 'parent' );
-		// echo('##connections<pre>'); print_r($connections); echo('</pre>');
-		// echo('##connections count<pre>'); print_r(count($connections)); echo('</pre>');
-
-		// Finally, we just have to check if we have connections 
-		if ( !empty($connections) && count($connections) > 0 ) {
-			// $has_projections 		= true;
-			// $has_youngpublic		= false;
-			// $has_highlight			= false;
-			// $has_guest				= false;
-			// $has_debate				= false; //ADDED #43
-			// $has_tag				= false;
-			// $guests					= array();
-
-			foreach($connections as $index => $connection) {
-				$films[] = $connection["parent"]->ID; // IF [parent][post_type] => film >>>>> print this is a program but don't print titles 
- 
-				$orders[] = get_post_meta($connection["intermediary"]->ID, "wpcf-f-p-film-order", true) ;
-			}
-		}
-	}
-
-	// echo('##output<pre>'); print_r($output);  echo('</pre>');
-	// echo('##orders<pre>'); print_r($orders);  echo('</pre>');
-
-	// Then orders by wpcf-f-p-film-order
-	$filmsordered = [];
-	foreach($films as $k => $v) 
-		$filmsordered[$orders[$k]] = $v;
-	ksort($filmsordered);
-
-	if ( $atts['output'] == 'count' ) {
-		return count($connections);
-	} else if ( $atts['output'] == 'titles' ) {
-		if ( count($connections) > 0 ) 
-			$output .= render_programs($filmsordered, true)[0];
-			// 	foreach ( $filmsordered as $k => $film ) {
-			// 		$french_title = get_post_meta($film, 'wpcf-f-french-operating-title', true);
-			// 		$output .= '<span class="program_title"><a href="' . get_permalink($film) . '" title="">' . (($french_title != '')?$french_title:get_the_title($film)) . '</a></span>';
-			// 		$output .= render_programs($filmsordered);
-			// 		if ($k !== array_key_last($filmsordered)) $output .= ' <span class="program_sep length">+</span> ';
-			// 	}
-		else
-			$output .="<i data-bs-toggle=\"tooltip\" data-bs-html=\"true\" title=\"Ce film est proposé dans un programme\" class=\"icon icon-play mr-1 f-12 d-inline-block\"></i>";
-		return $output;
-	} else if ( $atts['output'] == 'images' ) {
-		$output .= '<div class="slick-film-card w-100 h-280-px">';
-		foreach ( $filmsordered as $k => $film ) {
-			//post-featured-image-s-x2
-			//class = --w-100 h-280-px fit-image
-			$f_featured_img = get_the_post_thumbnail( $film, 'post-featured-image-s', array( 'class' => '--w-100 h-280-px fit-image' )); // #43 reduced size from post-featured-image-s-x2
-			$output .= sprintf('<figure>
-				%s
-			</figure>', $f_featured_img);
-		}
-		$output .= '</div>';
-		return $output;
-	} else if ( $atts['output'] == 'array' ) {
-		return $filmsordered;
-	} else {
-		return null;
-	}
-
-}
-add_shortcode( 'get_programs', 'func_get_programs' );
-
-function render_programs($films, $title_only = false) {
-	$program = '';
-	$program_length = 0;
-	foreach( $films as $k => $p_f_id ) {
-		$p_f_title 						= (( get_the_title($p_f_id) )?get_the_title($p_f_id):'');
-		$p_f_french_operating_title 	= get_post_meta( $p_f_id, 'wpcf-f-french-operating-title', true );
-		$p_f_movie_length 				= get_post_meta( $p_f_id, 'wpcf-f-movie-length', true );
-		
-		// if ( !$title_only ) {
-		$p_f_author 					= get_post_meta( $p_f_id, 'wpcf-f-author', true ); //#43
-		$p_f_production_year 			= get_post_meta( $p_f_id, 'wpcf-f-production-year', true ); //#43
-		//$p_f_available_formats 			= get_post_meta( $p_f_id, 'wpcf-f-available-formats', true ); //#43
-
-		$p_f_country_ 					= get_post_meta( $p_f_id, 'wpcf-f-country', true ); //#43
-		$p_f_co_production_country_ 	= get_post_meta( $p_f_id, 'wpcf-f-co-production-country', true ); //#43
-		$p_f_country 					= types_render_field( 'f-country', array('item' => $p_f_id) ); //#43
-		$p_f_co_production_country 		= types_render_field( 'f-co-production-country', array('item' => $p_f_id) ); //#43
-		// }
-
-		$p_f_premiere_ 					= get_post_meta( $p_f_id, 'wpcf-f-premiere', true ); //#43
-		$p_f_catalog_tag_ 				= get_post_meta( $p_f_id, 'wpcf-f-catalog-tag', true ); //#43
-		$p_f_premiere 					= types_render_field( 'f-premiere', array('item' => $p_f_id) ); //#43
-		$p_f_catalog_tag 				= types_render_field( 'f-catalog-tag', array('item' => $p_f_id) ); //#43
-
-		// $p_f_poster 					= get_post_meta( $p_f_id, 'wpcf-f-film-poster', true ); //#43
-		// $p_f_poster_id 					= WaffTwo\Core\waff_get_image_id_by_url($p_f_poster);
-		// $p_f_poster_url 				= wp_get_attachment_image_url( $p_f_poster_id, "film-poster" ); // OK
-		// $p_f_poster_img 				= wp_get_attachment_image( $p_f_poster_id, "film-poster", "", array( "class" => "img-responsive" ) ); // OK
-
-		// $p_f_featured_img 				= get_the_post_thumbnail( $p_f_id, 'film-poster');
-		// $p_f_poster_img					= ( $p_f_poster != '') ? $p_f_poster_img : $p_f_featured_img;
-
-		// Get terms
-		$p_f_sections 					= get_the_terms( $p_f_id, 'section' );
-		$html_p_f_section = '';
-		$last_p_f_section_color = '';
-		$last_p_f_section = '';
-		if (is_array($p_f_sections)) foreach($p_f_sections as $p_f_section) {
-			$p_f_section_color = get_term_meta( $p_f_section->term_id, 'wpcf-s-color', true );
-			if ( $p_f_section_color != '' ) $last_p_f_section_color = $p_f_section_color;
-			if ( $p_f_section_color != '' ) $last_p_f_section = $p_f_section;
-			$p_f_section_edition = get_term_meta( $p_f_section->term_id, 'wpcf-select-edition', true );
-			if ( $current_edition_id == $p_f_section_edition ) // Only current edition sections
-			$html_p_f_section .= sprintf('<a href="%s" %s class="dot-section" data-bs-toggle="tooltip" data-bs-container=".modal" data-bs-title="%s" data-bs-original-title="" title="">•</a>',
-			get_term_link($p_f_section->slug, 'section'),
-			(( $p_f_section_color != '' )?'style="color: '.$p_f_section_color.';"':''),
-			$p_f_section->name
-			);
-		}
-
-		$tooltip = ((( $p_f_author != '' )?'DE '.$p_f_author['lastname'].' '.$p_f_author['firstname']:'') . (( $p_f_country != '' )?' ・ '.$p_f_country:'') . (( $p_f_co_production_country != '' )?' ・ '.$p_f_co_production_country:'') . (( $p_f_production_year != '' )?' ・ ('.$p_f_production_year.')':''));
-		$program .= sprintf('
-				<span class="last_f_section_color" %s>
-					<a href="%s" class="title %s" %s>%s</a>
-					%s
-				</span>
-				%s
-				%s
-				%s
-				%s
-				%s
-				<!-- Program sep-->
-				%s',
-		(( $last_p_f_section_color != '' )?'style="color: '.$last_p_f_section_color.';"':''),
-		(( $p_f_title != '' )?get_permalink( $p_f_id ):get_permalink( $p_f_id )),
-		(( $p_f_title != '' )?'text-link btn-link disabled':'text-link'),
-		(( $last_p_f_section_color != '' )?'style="color: '.$last_p_f_section_color.';"':'') . (($title_only)?' data-bs-toggle="tooltip" data-bs-container=".part_one" data-bs-title="' . esc_html($tooltip) . '" data-bs-placement="top"':''),
-		esc_html(( $p_f_french_operating_title != '' && !$title_only )?$p_f_french_operating_title.' ('.$p_f_title.')':$p_f_title),
-		(( $p_f_author != '' && !$title_only )?'&nbsp;<span class="article">DE</span>&nbsp;<span class="director">'.$p_f_author['lastname'].' '.$p_f_author['firstname'].'</span>':''),
-		(( $p_f_country != '' && !$title_only )?'・ <span class="country">'.$p_f_country.'</span>':''),
-		(( $p_f_co_production_country != '' && !$title_only )?'・ <span class="co_production_country">'.$p_f_co_production_country.'</span>':''),
-		(( $p_f_production_year != '' && !$title_only )?'・ <span class="year muted">'.$p_f_production_year.'</span>':''),
-		(( $p_f_movie_length != '' )?((!$title_only)?'・ ':'').'<span class="length">'.$p_f_movie_length.'\'</span>':''),
-		$html_p_f_section,
-		// Program sep 
-		( $k < (count($films)) )?' <span class="sep display h5 bold op-5">+</span> ':'',
-		);
-		$program_length +=  (int) $p_f_movie_length;
-	} // End foreach
-	return array($program, $program_length, $last_p_f_section); 
-}
 
 
 /* Remove Views Wraps output for slick sliders 
@@ -2738,39 +2394,110 @@ add_shortcode('set-get', 'func_set_get');
 
 /**
  * Used in taxonomies archives templates 
- * projections__in is a list of preselected projections from a date to a room 
  */
-function get_counts($taxonomy_name = 'section', $taxonomy_id = array(), $projections__in = array()) {
+function get_counts($taxonomy_name = 'section', $taxonomy_id = array(), $exclude = array()) {
 
-	// echo $taxonomy_name . '<br/>';
-	// echo $taxonomy_id. '<br/>';
-	// print_r($projections__in);
+	/*
+		Get Counts old SQL method 
+	*/
 
-	// echo gettype($taxonomy_id);
-	// if ( !is_array($taxonomy_id) )
-	//		$taxonomy_id = [explode(",", $taxonomy_id)];
-	// echo gettype($taxonomy_id);
+	/*
+	// Get 'wpcf-p-is-guest' // SELECT proj.post_title, film.post_title, proj_meta_key.meta_value
+	global $wpdb;
+	$sql = <<<SQL
+	SELECT film.post_title, film.ID
+	FROM wp_posts AS proj, 
+	wp_posts AS film, 
+	wp_postmeta AS proj_meta_key, 
+	wp_postmeta AS proj_meta_film,
+	wp_term_relationships AS trs1,
+	wp_term_relationships AS trs2
+	WHERE ( proj.ID = proj_meta_key.post_id ) 
+	AND (proj_meta_film.post_id = proj.ID)
+	AND (proj_meta_film.meta_key = '_wpcf_belongs_film_id')
+	AND (proj_meta_film.meta_value = film.ID )
+	AND ( proj_meta_key.meta_key = 'wpcf-p-is-guest' AND CAST(proj_meta_key.meta_value AS SIGNED) = '1' )
+	AND proj.post_type = 'projection' 
+	AND ((proj.post_status = 'publish' OR proj.post_status = 'private'))
+	AND trs1.object_id = film.ID
+	AND trs1.term_taxonomy_id = 219
+	AND trs2.object_id = film.ID
+	AND trs2.term_taxonomy_id = 221
+	GROUP BY proj.ID 
+	ORDER BY proj.menu_order, proj.post_date DESC
+	SQL;
+
+	$results = $wpdb->get_results($sql);
+	print_r($results);
+	print_r(count($results));
+
+	// Get 'wpcf-p-young-public' // SELECT proj.post_title, film.post_title, proj_meta_key.meta_value
+	global $wpdb;
+	$sql = <<<SQL
+	SELECT film.post_title, film.ID
+	FROM wp_posts AS proj, 
+	wp_posts AS film, 
+	wp_postmeta AS proj_meta_key, 
+	wp_postmeta AS proj_meta_film,
+	wp_term_relationships AS trs1,
+	wp_term_relationships AS trs2
+	WHERE ( proj.ID = proj_meta_key.post_id ) 
+	AND (proj_meta_film.post_id = proj.ID)
+	AND (proj_meta_film.meta_key = '_wpcf_belongs_film_id')
+	AND (proj_meta_film.meta_value = film.ID )
+	AND ( proj_meta_key.meta_key = 'wpcf-p-young-public' AND CAST(proj_meta_key.meta_value AS SIGNED) = '1' )
+	AND proj.post_type = 'projection' 
+	AND ((proj.post_status = 'publish' OR proj.post_status = 'private'))
+	AND trs1.object_id = film.ID
+	AND trs1.term_taxonomy_id = 219
+	AND trs2.object_id = film.ID
+	AND trs2.term_taxonomy_id = 221
+	GROUP BY proj.ID 
+	ORDER BY proj.menu_order, proj.post_date DESC
+	SQL;
+
+	$results = $wpdb->get_results($sql);
+	print_r($results);
+	print_r(count($results));
+
+	// Get 'wpcf-p-highlights' // SELECT proj.post_title, film.post_title, proj_meta_key.meta_value
+	global $wpdb;
+	$sql = <<<SQL
+	SELECT film.post_title, film.ID
+	FROM wp_posts AS proj, 
+	wp_posts AS film, 
+	wp_postmeta AS proj_meta_key, 
+	wp_postmeta AS proj_meta_film,
+	wp_term_relationships AS trs1,
+	wp_term_relationships AS trs2
+	WHERE ( proj.ID = proj_meta_key.post_id ) 
+	AND (proj_meta_film.post_id = proj.ID)
+	AND (proj_meta_film.meta_key = '_wpcf_belongs_film_id')
+	AND (proj_meta_film.meta_value = film.ID )
+	AND ( proj_meta_key.meta_key = 'wpcf-p-highlights' AND CAST(proj_meta_key.meta_value AS SIGNED) = '1' )
+	AND proj.post_type = 'projection' 
+	AND ((proj.post_status = 'publish' OR proj.post_status = 'private'))
+	AND trs1.object_id = film.ID
+	AND trs1.term_taxonomy_id = 219
+	AND trs2.object_id = film.ID
+	AND trs2.term_taxonomy_id = 221
+	GROUP BY proj.ID 
+	ORDER BY proj.menu_order, proj.post_date DESC
+	SQL;
+
+	$results = $wpdb->get_results($sql);
+	print_r($results);
+	print_r(count($results));
+	*/
 
 	global $current_edition_id;
 	global $post; 
 
 	// Get counts 
 	$counts = array();
-	$conditionnal_tax_query = array();
-	$post__in = array();
-
-	// Section 
-	// Room 
-	if ( $taxonomy_name === 'section' || $taxonomy_name === 'room')
-		$conditionnal_tax_query = array (
-			'taxonomy'	=> $taxonomy_name,
-			'field' 	=> 'term_id',
-			'terms' 	=> $taxonomy_id,
-		);
 
 	/**
 	 * All films / OK 
-	 * All films if no sections
 	 */
 
 	// Films Args
@@ -2803,17 +2530,13 @@ function get_counts($taxonomy_name = 'section', $taxonomy_id = array(), $project
 		'fields' => 'ids',
 	);
 
-	// Conditionnal ( sections )
-	if ( !empty($conditionnal_tax_query) && $taxonomy_name === 'section') 
-		$films_in_section_args['tax_query'][] = $conditionnal_tax_query;
-	
-	// Conditionnal ( sections ) >> TODO FROM DINARD ? This one is better ? 
-	// if ( $taxonomy_name === 'section')
-	// 	$films_in_section_args['tax_query'][] = array (
-	// 		'taxonomy'	=> $taxonomy_name,
-	// 		'field' 	=> 'term_id',
-	// 		'terms' 	=> $taxonomy_id,
-	// 	);
+	// Conditionnal 
+	if ( $taxonomy_name === 'section')
+		$films_in_section_args['tax_query'][] = array (
+			'taxonomy'	=> $taxonomy_name,
+			'field' 	=> 'term_id',
+			'terms' 	=> $taxonomy_id,
+		);
 
 	// Query 
 	$films_in_section_query = new WP_Query($films_in_section_args);
@@ -2823,10 +2546,6 @@ function get_counts($taxonomy_name = 'section', $taxonomy_id = array(), $project
 
 	// Store count
 	$counts['films'] = count($films_in_section_results); //found_posts
-
-	//error_log("> 3.0 films_in_section_results");
-	//echo( '<b>Film(s) by sections::count</b> ' . print_r(count($films_in_section_results), true) . '<br/>');
-	//echo( '<pre> Film(s) by sections::' . print_r($films_in_section_results, true) . '</pre>');
 
 	// Restore original Post Data 
 	wp_reset_postdata();
@@ -2872,29 +2591,22 @@ function get_counts($taxonomy_name = 'section', $taxonomy_id = array(), $project
 		'fields' => 'ids',
 	);
 
-	// Conditionnal ( sections )
-	if ( !empty($conditionnal_tax_query) && $taxonomy_name === 'section' ) 
-		$films_promoted_args['tax_query'][] = $conditionnal_tax_query;
-
-	// Conditionnal ( sections ) >> TODO FROM DINARD ? This one is better ? 
-	// if ( $taxonomy_name === 'section')
-	// 	$films_promoted_args['tax_query'][] = array (
-	// 		'taxonomy'	=> $taxonomy_name,
-	// 		'field' 	=> 'term_id',
-	// 		'terms' 	=> $taxonomy_id,
-	// 	);
+	// Conditionnal 
+	if ( $taxonomy_name === 'section')
+		$films_promoted_args['tax_query'][] = array (
+			'taxonomy'	=> $taxonomy_name,
+			'field' 	=> 'term_id',
+			'terms' 	=> $taxonomy_id,
+		);
 
 	// Query 
-	$films_promoted_query = new WP_Query($films_promoted_args);
+	$films_promoted_args = new WP_Query($films_promoted_args);
 
 	// Results 
 	$films_promoted_results = $films_promoted_query->posts;
 
 	// Store count
 	$counts['wpcf-f-promote'] = count($films_promoted_results);
-
-	//echo( '<b>Film(s) promoted by sections::count</b> ' . print_r(count($films_promoted_results), true) . '<br/>');
-	//echo( '<pre> Film(s) promoted by sections::' . print_r($films_promoted_results, true) . '</pre>');
 
 	// Restore original Post Data 
 	wp_reset_postdata();
@@ -2904,220 +2616,24 @@ function get_counts($taxonomy_name = 'section', $taxonomy_id = array(), $project
 	 * All projections belongs to a film 
 	 */
 
+	// error_log("> 3.0 films_in_section_results");
+	// error_log(print_r($films_in_section_results, true));
 
-	// 	/**
-	//  * All projections belongs to a film >> DINARD WAY > Old ? 
-	//  */
-
-	// // error_log("> 3.0 films_in_section_results");
-	// // error_log(print_r($films_in_section_results, true));
-
-	// $belongs_film_projection_ids = array();
-	// $relationship = 'film_projection';
-	// // get the child posts of the parent post
-	// // $belongs_film_projection_ids[] = toolset_get_related_posts(
-	// // 	array( 'parent' => $films_in_section_results ), //query_by_elements
-	// // 	$relationship, //relationship
-	// // 	array(
-	// // 		// 'child', // query_by_role: Name of the element role to query by. This argument is required if a single post is provided in $query_by_elements, and in other cases, it must not be present at all. Accepted values: 'parent' | 'child' | 'intermediary'.
-	// // 		100, //limit
-	// // 		0, //offset
-	// // 		array(), //args
-	// // 		'post_id', //return
-	// // 		'child' //role_to_return : 'parent' | 'child' | 'intermediary' | 'all'
-	// // 	)
-	// // );
-	// $belongs_film_projection_ids = toolset_get_related_posts(
-	// 	array( 'parent' => $films_in_section_results ), //query_by_elements : single ID or array( 'parent' => $films_in_section_results ), //query_by_elements
-	// 	$relationship, //relationship
-	// 	array(
-	// 		// 'query_by_role' => $origin, // Origin post role / query_by_role: Name of the element role to query by. This argument is required if a single post is provided in $query_by_elements, and in other cases, it must not be present at all. Accepted values: 'parent' | 'child' | 'intermediary'.
-	// 		'role_to_return' => 'child', // Role of posts to return : 'parent' | 'child' | 'intermediary' | 'all'
-	// 		'return' => 'post_id', // Return array of IDs (post_id) or post objects (post_object)
-	// 		'limit' => 999, // Max number of results
-	// 		'offset' => 0, // Starting from
-	// 		// 'orderby' => 'title', 
-	// 		// 'order' => 'ASC',
-	// 		'need_found_rows' => false, // also return count of results
-	// 		'args' => null // Array for adding meta queries etc.
-	// 	)
-	// );
-
-	// // echo("> 3.0 belongs_film : find parent returns child");
-	// // echo( '<pre>' . print_r($belongs_film_projection_ids, true) . '</pre>');
-	
-	// if ( !is_array($exclude) )
-	// 	$post__in = $belongs_film;
-	// else 
-	// 	$post__in = array_merge( $exclude, $belongs_film);
-
-	// // All projections Query args 
-	// $projections_args = array(
-	// 	'post_type' 		=> 'projection',
-	// 	'posts_per_page' 	=> -1,
-	// 	'nopaging' 			=> true,
-	// 	'order' 			=> 'DESC',
-	// 	'post_status' 		=> 'publish',
-	// 		// Have film merged with exclude 
-	// 	'post__in'			=> $post__in,
-	// 		// In edition & in section
-	// 	'tax_query' => array(
-	// 		'relation' 		=> 'AND',
-	// 		array (
-	// 			'taxonomy' 	=> 'edition',
-	// 			'field' 	=> 'term_id',
-	// 			'terms' 	=> array($current_edition_id),
-	// 		),
-	// 		// Added by a conditionnal
-	// 	),
-	// 	// Have films / OLD approach before toolset 3.0 
-	// 	// 'meta_query' => array(
-	// 	// 	'relation' 		=> 'AND',
-	// 	// 	'belongs' => array(
-	// 	// 		'compare' 	=> 'IN',
-	// 	// 		'key' 		=> '_wpcf_belongs_film_id', // A Revoir maj toolset 
-	// 	// 		'value' 	=> $films_in_section_results,
-	// 	// 	),
-	// 	// ),
-	// 	// Have film / NEW approach > NOT WORKING FOR MANY IDs 
-	// 	// New toolset_relationships query argument
-	// 	// 'toolset_relationships' => array(
-	// 	// 	'role' => 'child',
-	// 	// 	'related_to' => $films_in_section_results,
-	// 	// 	// this will work only with relationships that have existed before the migration
-	// 	// 	// if possible, use the relationship slug instead of an array
-	// 	// 	//'relationship' => array( 'film', 'projection' ),
-	// 	// 	'relationship' => 'film_projection',
-	// 	// ),			 
-	// 	// Gets IDs
-	// 	'fields' => 'ids',
-	// );
-
-	// // Conditionnal 
-	// if ( $taxonomy_name === 'room')
-	// 	$projections_args['tax_query'][] = array (
-	// 		'taxonomy'	=> $taxonomy_name,
-	// 		'field' 	=> 'term_id',
-	// 		'terms' 	=> $taxonomy_id,
-	// 	);
-
-
-	// // Query 
-	// $projections_query = new WP_Query($projections_args);
-
-	// // Results 
-	// $projections_results = $projections_query->posts;
-
-	// // echo ('<pre>' . print_r($projections_args, true) . '</pre>');
-	// // echo ('<pre>' . print_r($projections_results, true) . '</pre>');
-
-	// // Store count
-	// $counts['projections'] = count($projections_results);
-
-	// // Restore original Post Data 
-	// wp_reset_postdata();
-	// wp_reset_query();
-
-	// /**
-	//  * All projections not belongs to a film 
-	//  */
-
-	// // All projections Query args 
-	// $programs_args = array(
-	// 	'post_type' 		=> 'projection',
-	// 	'posts_per_page' 	=> -1,
-	// 	'nopaging' 			=> true,
-	// 	'order' 			=> 'DESC',
-	// 	'post_status' 		=> 'publish',
-	// 	//'post__in'			=> $exclude,
-	// 	'post__not_in'		=> $belongs_film_projection_ids, //$projections_results,
-	// 	// In edition & in section
-	// 	'tax_query' => array(
-	// 		'relation' 		=> 'AND',
-	// 		array (
-	// 			'taxonomy' 	=> 'edition',
-	// 			'field' 	=> 'term_id',
-	// 			'terms' 	=> array($current_edition_id),
-	// 		),
-	// 		// Added by a conditionnal
-	// 	),
-	// 	// Have no films
-	// 	// 'meta_query' => array(
-	// 	// 	'relation' 		=> 'AND',
-	// 	// 	'belongs' => array(
-	// 	// 		'compare' 	=> 'NOT EXISTS',
-	// 	// 		'key' 		=> '_wpcf_belongs_film_id',
-	// 	// 	),
-	// 	// ),
-	// 	// Gets IDs
-	// 	'fields' => 'ids',
-	// );
-
-	// // Conditionnal 
-	// if ( $taxonomy_name === 'room')
-	// 	$programs_args['tax_query'][] = array (
-	// 		'taxonomy'	=> $taxonomy_name,
-	// 		'field' 	=> 'term_id',
-	// 		'terms' 	=> $taxonomy_id,
-	// 	);
-
-	// // Query 
-	// $programs_query = new WP_Query($programs_args);
-
-	// // Results 
-	// $programs_results = $programs_query->posts;
-
-	// // echo ('<pre>' . print_r($programs_args, true) . '</pre>');
-	// // echo ('<pre>' . print_r($programs_results, true) . '</pre>');
-
-	// // Store count
-	// $counts['programs'] = count($programs_results);
-
-	// // Restore original Post Data 
-	// wp_reset_postdata();
-	// wp_reset_query();
-
-
-	// All projections without Query args ( no date, no room, only edition )
-	$projections_args = array(
-		'post_type' 		=> 'projection',
-		'posts_per_page' 	=> -1,
-		'nopaging' 			=> true,
-		'order' 			=> 'DESC',
-		'post_status' 		=> 'publish',
-			// In edition
-		'tax_query' => array(
-			'relation' 		=> 'AND',
-			array (
-				'taxonomy' 	=> 'edition',
-				'field' 	=> 'term_id',
-				'terms' 	=> array($current_edition_id),
-			),
-		),	 
-		// Gets IDs
-		'fields' => 'ids',
-	);
-
-	// Query 
-	$projections_query = new WP_Query($projections_args);
-
-	// Results 
-	$projections_results = $projections_query->posts;
-
-	// echo ('<b>All Projection(s) ( with and without films )::count</b> ' . print_r(count($projections_results), true) . '<br/>'); // Il va falloir différencier quand on a un exclude ou non 
-	// echo ('<pre> ALL Projection(s)::' . print_r($projections_results, true) . '</pre>'); // Il va falloir différencier quand on a un exclude ou non 
-	// echo ('<pre> ALL Projection(s)::' . print_r($projections_query, true) . '</pre>'); // Il va falloir différencier quand on a un exclude ou non 
-
-	// Restore original Post Data 
-	wp_reset_postdata();
-	wp_reset_query();
-
-	/**
-	 * Get all projection connected to a film
-	 */
-	error_log(count($projections_results));
 	$belongs_film_projection_ids = array();
 	$relationship = 'film_projection';
+	// get the child posts of the parent post
+	// $belongs_film_projection_ids[] = toolset_get_related_posts(
+	// 	array( 'parent' => $films_in_section_results ), //query_by_elements
+	// 	$relationship, //relationship
+	// 	array(
+	// 		// 'child', // query_by_role: Name of the element role to query by. This argument is required if a single post is provided in $query_by_elements, and in other cases, it must not be present at all. Accepted values: 'parent' | 'child' | 'intermediary'.
+	// 		100, //limit
+	// 		0, //offset
+	// 		array(), //args
+	// 		'post_id', //return
+	// 		'child' //role_to_return : 'parent' | 'child' | 'intermediary' | 'all'
+	// 	)
+	// );
 	$belongs_film_projection_ids = toolset_get_related_posts(
 		array( 'parent' => $films_in_section_results ), //query_by_elements : single ID or array( 'parent' => $films_in_section_results ), //query_by_elements
 		$relationship, //relationship
@@ -3125,180 +2641,154 @@ function get_counts($taxonomy_name = 'section', $taxonomy_id = array(), $project
 			// 'query_by_role' => $origin, // Origin post role / query_by_role: Name of the element role to query by. This argument is required if a single post is provided in $query_by_elements, and in other cases, it must not be present at all. Accepted values: 'parent' | 'child' | 'intermediary'.
 			'role_to_return' => 'child', // Role of posts to return : 'parent' | 'child' | 'intermediary' | 'all'
 			'return' => 'post_id', // Return array of IDs (post_id) or post objects (post_object)
-			'limit' => count($projections_results)!==0?count($projections_results):-1, // Max number of results
+			'limit' => 999, // Max number of results
 			'offset' => 0, // Starting from
 			// 'orderby' => 'title', 
 			// 'order' => 'ASC',
 			'need_found_rows' => false, // also return count of results
-			'args' => array(), // Array for adding meta queries etc.
+			'args' => null // Array for adding meta queries etc.
 		)
 	);
-	// Programs 
-	$belongs_programs_projection_ids = toolset_get_related_posts(
-		array( 'parent' => $films_in_section_results ), //query_by_elements : single ID or array( 'parent' => $films_in_section_results ), //query_by_elements
-		'films-projection', //relationship
-		array(
-			// 'query_by_role' => $origin, // Origin post role / query_by_role: Name of the element role to query by. This argument is required if a single post is provided in $query_by_elements, and in other cases, it must not be present at all. Accepted values: 'parent' | 'child' | 'intermediary'.
-			'role_to_return' => 'child', // Role of posts to return : 'parent' | 'child' | 'intermediary' | 'all'
-			'return' => 'post_id', // Return array of IDs (post_id) or post objects (post_object)
-			'limit' => count($projections_results)!==0?count($projections_results):-1, // Max number of results
-			'offset' => 0, // Starting from
-			// 'orderby' => 'title', 
-			// 'order' => 'ASC',
-			'need_found_rows' => false, // also return count of results
-			'args' => array(), // Array for adding meta queries etc.
-		)
-	);
-
-
-	/**
-	 * Then find all projection not connected to a film 
-	 */
-	$projections_without_films = array_diff($projections_results, $belongs_film_projection_ids);
-	$projections_without_programs = array_diff($projections_results, $belongs_programs_projection_ids);
-
 
 	// echo("> 3.0 belongs_film : find parent returns child");
-	// echo( '<pre> <b>::All films ( in sections )</b>' . print_r($films_in_section_results, true) . '</pre>');
-	// echo( '<pre> <b>::Projections__belongs</b>' . print_r($belongs_film_projection_ids, true) . '</pre>'); // Voir pour reduire à l'edition en cours
-	// echo( '<b>::Projections__belongs WITH films::count </b>' . print_r(count($belongs_film_projection_ids), true) . '<br/>'); // Voir pour reduire à l'edition en cours
-	// echo( '<b>::Projections__belongs WITH programs::count </b>' . print_r(count($belongs_programs_projection_ids), true) . '<br/>'); // Voir pour reduire à l'edition en cours
-	// echo( '<b>::Projections__belongs WITHOUT films::count </b>' . print_r(count($projections_without_films), true) . '<br/>'); // Voir pour reduire à l'edition en cours
-	// echo( '<b>::Projections__belongs WITHOUT programs::count </b>' . print_r(count($projections_without_programs), true) . '<br/>'); // Voir pour reduire à l'edition en cours
-	// echo( '<b>::Projections that ARE EVENTS </b>' . print_r(count(array_diff( $projections__in, array_merge($projections_without_films, $projections_without_programs) )), true) . '<br/>'); // Voir pour reduire à l'edition en cours
+	// echo( '<pre>' . print_r($belongs_film_projection_ids, true) . '</pre>');
+	
+	if ( !is_array($exclude) )
+		$post__in = $belongs_film;
+	else 
+		$post__in = array_merge( $exclude, $belongs_film);
+
+	// All projections Query args 
+	$projections_args = array(
+		'post_type' 		=> 'projection',
+		'posts_per_page' 	=> -1,
+		'nopaging' 			=> true,
+		'order' 			=> 'DESC',
+		'post_status' 		=> 'publish',
+			// Have film merged with exclude 
+		'post__in'			=> $post__in,
+			// In edition & in section
+		'tax_query' => array(
+			'relation' 		=> 'AND',
+			array (
+				'taxonomy' 	=> 'edition',
+				'field' 	=> 'term_id',
+				'terms' 	=> array($current_edition_id),
+			),
+			// Added by a conditionnal
+		),
+		// Have films / OLD approach before toolset 3.0 
+		// 'meta_query' => array(
+		// 	'relation' 		=> 'AND',
+		// 	'belongs' => array(
+		// 		'compare' 	=> 'IN',
+		// 		'key' 		=> '_wpcf_belongs_film_id', // A Revoir maj toolset 
+		// 		'value' 	=> $films_in_section_results,
+		// 	),
+		// ),
+		// Have film / NEW approach > NOT WORKING FOR MANY IDs 
+		// New toolset_relationships query argument
+		// 'toolset_relationships' => array(
+		// 	'role' => 'child',
+		// 	'related_to' => $films_in_section_results,
+		// 	// this will work only with relationships that have existed before the migration
+		// 	// if possible, use the relationship slug instead of an array
+		// 	//'relationship' => array( 'film', 'projection' ),
+		// 	'relationship' => 'film_projection',
+		// ),			 
+		// Gets IDs
+		'fields' => 'ids',
+	);
+
+	// Conditionnal 
+	if ( $taxonomy_name === 'room')
+		$projections_args['tax_query'][] = array (
+			'taxonomy'	=> $taxonomy_name,
+			'field' 	=> 'term_id',
+			'terms' 	=> $taxonomy_id,
+		);
+
+
+	// Query 
+	$projections_query = new WP_Query($projections_args);
+
+	// Results 
+	$projections_results = $projections_query->posts;
+
+	// echo ('<pre>' . print_r($projections_args, true) . '</pre>');
+	// echo ('<pre>' . print_r($projections_results, true) . '</pre>');
+
+	// Store count
+	$counts['projections'] = count($projections_results);
+
+	// Restore original Post Data 
+	wp_reset_postdata();
+	wp_reset_query();
 
 	/**
-	 * Finally if we have a delected projections array, filter all results 
+	 * All projections not belongs to a film 
 	 */
-	if ( !empty($projections__in) ) {
 
-		// echo("> We have a selected projections__in <br/>");
-		$post__in = $projections__in;
-
-		// echo( '<pre> <b>::Projections__in ( projections filtered by date )</b>' . print_r($projections__in, true) . '</pre>');
-		// echo( '<pre> <b>::Selected films ( projection WITHOUT films )</b> ' . print_r(array_diff( $projections__in, $belongs_film_projection_ids), true) . '</pre>');
-		// echo( '<pre> <b>::Selected programs ( projection WITH films )</b> ' . print_r(array_diff( $projections__in, $projections_without_films), true) . '</pre>');
-
-		// Store count
-		$counts['projections'] = count($projections__in);
-		$counts['events'] = count(array_diff( $projections__in, array_merge($projections_without_films, $projections_without_programs) ));
-		$counts['programs'] = count($belongs_programs_projection_ids);
-
-	} else {
-
-		// echo("> We do not have a selected projections__in, then query on all projections <br/>");
-
-		/**
-		 * All projections belongs to a film with query
-		 */
-		
-		$projections_args = array(
-			'post_type' 		=> 'projection',
-			'posts_per_page' 	=> -1,
-			'nopaging' 			=> true,
-			'order' 			=> 'DESC',
-			'post_status' 		=> 'publish',
-				// Have film merged with date  
-			'post__in'			=> $belongs_film_projection_ids,
-				// In edition & in section
-			'tax_query' => array(
-				'relation' 		=> 'AND',
-				array (
-					'taxonomy' 	=> 'edition',
-					'field' 	=> 'term_id',
-					'terms' 	=> array($current_edition_id),
-				),
-				// Added by a conditionnal
-			),		 
-			// Gets IDs
-			'fields' => 'ids',
-		);
-
-		// Conditionnal ( rooms )
-		if ( !empty($conditionnal_tax_query) && $taxonomy_name === 'room') 
-			$projections_args['tax_query'][] = $conditionnal_tax_query;
-
-		// // Conditionnal ( rooms ) >> Dinard WAY is it better ? 
-		// if ( $taxonomy_name === 'room')
-		// $p_args['tax_query'][] = array (
-		// 	'taxonomy'	=> $taxonomy_name,
-		// 	'field' 	=> 'term_id',
-		// 	'terms' 	=> $taxonomy_id,
-		// );
-
-		// Query 
-		$projections_query = new WP_Query($projections_args);
-
-		// Results 
-		$projections_results = $projections_query->posts;
-
-		// echo ('<pre>'. !empty($conditionnal_tax_query). print_r($conditionnal_tax_query, true) . '</pre>');
-		// echo ('<pre>' . print_r($projections_args, true) . '</pre>');
-		// echo ('<b>Projection(s) WITH films queried::count</b> ' . print_r(count($projections_results), true) . '<br/>');
-		// echo ('<pre> Projection(s) WITH films queried::' . print_r($projections_results, true) . '</pre>');
-
-		// Store count
-		$counts['projections'] = count($projections_results);
-
-		// Restore original Post Data 
-		wp_reset_postdata();
-		wp_reset_query();
-
-		$post__in = $projections_results;
-
-		// /**
-		//  * All projections not belongs to a film or program with query
-		//  */
-
-		$events_args = array(
-			'post_type' 		=> 'projection',
-			'posts_per_page' 	=> -1,
-			'nopaging' 			=> true,
-			'order' 			=> 'DESC',
-			'post_status' 		=> 'publish',
-			'post__in'			=> array_merge($projections_without_films, $projections_without_programs),
-			//'post__not_in'		=> array_merge( $projections__in, $belongs_film_projection_ids), //$belongs_film_projection_ids, //$projections_results,
-			// In edition & in section
-			'tax_query' => array(
-				'relation' 		=> 'AND',
-				array (
-					'taxonomy' 	=> 'edition',
-					'field' 	=> 'term_id',
-					'terms' 	=> array($current_edition_id),
-				),
-				// Added by a conditionnal
+	// All projections Query args 
+	$programs_args = array(
+		'post_type' 		=> 'projection',
+		'posts_per_page' 	=> -1,
+		'nopaging' 			=> true,
+		'order' 			=> 'DESC',
+		'post_status' 		=> 'publish',
+		//'post__in'			=> $exclude,
+		'post__not_in'		=> $belongs_film_projection_ids, //$projections_results,
+		// In edition & in section
+		'tax_query' => array(
+			'relation' 		=> 'AND',
+			array (
+				'taxonomy' 	=> 'edition',
+				'field' 	=> 'term_id',
+				'terms' 	=> array($current_edition_id),
 			),
-			// Gets IDs
-			'fields' => 'ids',
+			// Added by a conditionnal
+		),
+		// Have no films
+		// 'meta_query' => array(
+		// 	'relation' 		=> 'AND',
+		// 	'belongs' => array(
+		// 		'compare' 	=> 'NOT EXISTS',
+		// 		'key' 		=> '_wpcf_belongs_film_id',
+		// 	),
+		// ),
+		// Gets IDs
+		'fields' => 'ids',
+	);
+
+	// Conditionnal 
+	if ( $taxonomy_name === 'room')
+		$programs_args['tax_query'][] = array (
+			'taxonomy'	=> $taxonomy_name,
+			'field' 	=> 'term_id',
+			'terms' 	=> $taxonomy_id,
 		);
 
-		// Conditionnal ( rooms )
-		if ( !empty($conditionnal_tax_query) && $taxonomy_name === 'room') 
-			$events_args['tax_query'][] = $conditionnal_tax_query;
+	// Query 
+	$programs_query = new WP_Query($programs_args);
 
-		// Query 
-		$events_query = new WP_Query($events_args);
+	// Results 
+	$programs_results = $programs_query->posts;
 
-		// Results 
-		$events_results = $events_query->posts;
+	// echo ('<pre>' . print_r($programs_args, true) . '</pre>');
+	// echo ('<pre>' . print_r($programs_results, true) . '</pre>');
 
-		// echo ('<b>Projection(s) WITHOUT films queried (programs)::count = events</b> ' . print_r(count($events_results), true) . '<br/>');
-		// echo ('<pre> Projection(s) WITHOUT films queried(programs):: = events' . print_r($events_results, true) . '</pre>');
+	// Store count
+	$counts['programs'] = count($programs_results);
 
-		// Store count
-		$counts['events'] = count($events_results);
-
-		// Restore original Post Data 
-		wp_reset_postdata();
-		wp_reset_query();
-
-	}
+	// Restore original Post Data 
+	wp_reset_postdata();
+	wp_reset_query();
 	
 	/**
-	 * Projections ( all ) with custom fields 
+	 * Projection with fields 
 	 */
 
-	$projection_count_fields = array('wpcf-p-is-guest', 'wpcf-p-young-public', 'wpcf-p-highlights', 'wpcf-p-is-debate');
+	$projection_count_fields = array('wpcf-p-is-guest', 'wpcf-p-young-public', 'wpcf-p-highlights');
 	foreach ($projection_count_fields as $f) {
 		// Query args 
 		$p_args = array(
@@ -3322,6 +2812,11 @@ function get_counts($taxonomy_name = 'section', $taxonomy_id = array(), $project
 			// Have films
 			'meta_query' => array(
 				'relation' 		=> 'AND',
+				// 'belongs' => array(
+				// 	'compare' 	=> 'IN',
+				// 	'key' 		=> '_wpcf_belongs_film_id',
+				// 	'value' 	=> $films_in_section_results,
+				// ),
 				'p-compare' => array(
 					'key' 		=> $f,
 					'compare' 	=> '=',
@@ -3333,9 +2828,13 @@ function get_counts($taxonomy_name = 'section', $taxonomy_id = array(), $project
 			'fields' => 'ids',
 		);
 
-		// Conditionnal ( rooms )
-		if ( !empty($conditionnal_tax_query) && $taxonomy_name === 'room') 
-			$p_args['tax_query'][] = $conditionnal_tax_query;
+		// Conditionnal 
+		if ( $taxonomy_name === 'room')
+			$p_args['tax_query'][] = array (
+				'taxonomy'	=> $taxonomy_name,
+				'field' 	=> 'term_id',
+				'terms' 	=> $taxonomy_id,
+			);
 
 		// Query 
 		$p_query = new WP_Query($p_args);
@@ -3353,126 +2852,16 @@ function get_counts($taxonomy_name = 'section', $taxonomy_id = array(), $project
 			$counts['guests'] = $p_results;
 		}
 
-		if ($f === 'wpcf-p-is-debate') {
-			$counts['debates'] = $p_results;
-		}
-
 		// Restore original Post Data 
 		wp_reset_postdata();
-		wp_reset_query();
 	}
 
-	// echo ('<pre> FINAL COUNTS::' . print_r($counts, true) . '</pre>');
 	return $counts;
-
-	/*
-		Get Counts old SQL method 
-	*/
-
-	/*
-	// Get 'wpcf-p-is-guest' // SELECT proj.post_title, film.post_title, proj_meta_key.meta_value
-	global $wpdb;
-	$sql = <<<SQL
-	SELECT film.post_title, film.ID
-	FROM wp_posts AS proj, 
-	wp_posts AS film, 
-	wp_postmeta AS proj_meta_key, 
-	wp_postmeta AS proj_meta_film,
-	wp_term_relationships AS trs1,
-	wp_term_relationships AS trs2
-	WHERE ( proj.ID = proj_meta_key.post_id ) 
-	AND (proj_meta_film.post_id = proj.ID)
-	AND (proj_meta_film.meta_key = '_wpcf_belongs_film_id')
-	AND (proj_meta_film.meta_value = film.ID )
-	AND ( proj_meta_key.meta_key = 'wpcf-p-is-guest' AND CAST(proj_meta_key.meta_value AS SIGNED) = '1' )
-	AND proj.post_type = 'projection' 
-	AND ((proj.post_status = 'publish' OR proj.post_status = 'private'))
-	AND trs1.object_id = film.ID
-	AND trs1.term_taxonomy_id = 219
-	AND trs2.object_id = film.ID
-	AND trs2.term_taxonomy_id = 221
-	GROUP BY proj.ID 
-	ORDER BY proj.menu_order, proj.post_date DESC
-	SQL;
-
-	$results = $wpdb->get_results($sql);
-	echo '<pre><b>is guest::</b>'.print_r($results, true).'</pre>';
-	echo '<pre><b>is guest::count</b>'.print_r(count($results), true).'</pre>';
-
-	// Get 'wpcf-p-young-public' // SELECT proj.post_title, film.post_title, proj_meta_key.meta_value
-	global $wpdb;
-	$sql = <<<SQL
-	SELECT film.post_title, film.ID
-	FROM wp_posts AS proj, 
-	wp_posts AS film, 
-	wp_postmeta AS proj_meta_key, 
-	wp_postmeta AS proj_meta_film,
-	wp_term_relationships AS trs1,
-	wp_term_relationships AS trs2
-	WHERE ( proj.ID = proj_meta_key.post_id ) 
-	AND (proj_meta_film.post_id = proj.ID)
-	AND (proj_meta_film.meta_key = '_wpcf_belongs_film_id')
-	AND (proj_meta_film.meta_value = film.ID )
-	AND ( proj_meta_key.meta_key = 'wpcf-p-young-public' AND CAST(proj_meta_key.meta_value AS SIGNED) = '1' )
-	AND proj.post_type = 'projection' 
-	AND ((proj.post_status = 'publish' OR proj.post_status = 'private'))
-	AND trs1.object_id = film.ID
-	AND trs1.term_taxonomy_id = 219
-	AND trs2.object_id = film.ID
-	AND trs2.term_taxonomy_id = 221
-	GROUP BY proj.ID 
-	ORDER BY proj.menu_order, proj.post_date DESC
-	SQL;
-
-	$results = $wpdb->get_results($sql);
-	echo '<pre><b>is young::</b>'.print_r($results, true).'</pre>';
-	echo '<pre><b>is young::count</b>'.print_r(count($results), true).'</pre>';
-
-	// Get 'wpcf-p-highlights' // SELECT proj.post_title, film.post_title, proj_meta_key.meta_value
-	global $wpdb;
-	$sql = <<<SQL
-	SELECT film.post_title, film.ID
-	FROM wp_posts AS proj, 
-	wp_posts AS film, 
-	wp_postmeta AS proj_meta_key, 
-	wp_postmeta AS proj_meta_film,
-	wp_term_relationships AS trs1,
-	wp_term_relationships AS trs2
-	WHERE ( proj.ID = proj_meta_key.post_id ) 
-	AND (proj_meta_film.post_id = proj.ID)
-	AND (proj_meta_film.meta_key = '_wpcf_belongs_film_id')
-	AND (proj_meta_film.meta_value = film.ID )
-	AND ( proj_meta_key.meta_key = 'wpcf-p-highlights' AND CAST(proj_meta_key.meta_value AS SIGNED) = '1' )
-	AND proj.post_type = 'projection' 
-	AND ((proj.post_status = 'publish' OR proj.post_status = 'private'))
-	AND trs1.object_id = film.ID
-	AND trs1.term_taxonomy_id = 219
-	AND trs2.object_id = film.ID
-	AND trs2.term_taxonomy_id = 221
-	GROUP BY proj.ID 
-	ORDER BY proj.menu_order, proj.post_date DESC
-	SQL;
-
-	$results = $wpdb->get_results($sql);
-	echo '<pre><b>is highlights::</b>'.print_r($results, true).'</pre>';
-	echo '<pre><b>is highlights::count</b>'.print_r(count($results), true).'</pre>';
-	*/
 }
 
 if (is_admin()) {
    //add_filter('get_terms_args', 'filterGetTermArgs', 10, 2);
 }
-
-
-/**
- * Emails functions 
- * =================================================================
- * =================================================================
- * =================================================================
- * =================================================================
- */
-
-
 
 /*
 	Wordpress Better emails localization	
